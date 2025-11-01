@@ -1,0 +1,196 @@
+Build a React + Vite app named AgroConnect, connecting local farmers and buyers for a transparent produce marketplace. Use MUI, Zustand, Axios (with JWT access + refresh cookie handling), React Router v6, react-hook-form, and react-hot-toast.
+
+🎨 1. Theme: "Farm Fresh"
+Primary: #10B981 (Emerald Green)
+
+Accent: #F59E0B (Amber Yellow)
+
+Background: #F3F4F6 (Light Gray)
+
+Card/Paper: #FFFFFF (White)
+
+Text: #1F2937 (Dark Gray)
+
+Apply this globally using createTheme from MUI and wrap the app in <ThemeProvider> in main.jsx.
+
+🔐 2. Authentication Flow & Token Logic
+Backend: Sets refresh_token in an HttpOnly cookie.
+
+Frontend: api.js (Axios) must always send { withCredentials: true }.
+
+Zustand (useAuthStore): Stores only the access_token and user object. The refresh_token is never accessible to JavaScript.
+
+Page 1: RegisterPage.jsx (/register)
+Fields: email, first_name, last_name, phone, password, password_confirm.
+
+Action: POST /api/auth/register/ (with react-hook-form validation).
+
+On Success (201: toast.success('Account created! Please check your email.') → Maps('/verify-otp', { state: { email: ... } }).
+
+Page 2: VerifyOTPPage.jsx (/verify-otp)
+Fields: 6-digit OTP input (use MuiOtpInput).
+
+Action: POST /api/auth/verify-otp/ with { email, otp }.
+
+On Success (200): This endpoint must log the user in.
+
+Returns: { access_token, user }.
+
+Backend: Sets the refresh_token HttpOnly cookie.
+
+Frontend: useAuthStore.getState().login(access_token, user) → toast.success('Welcome!') → Maps('/setup-profile').
+
+Demo Hack: If otp === '123456', simulate the login and navigate.
+
+Page 3: SetupProfilePage.jsx (/setup-profile)
+This is a ProtectedRoute.
+
+Step 1: Show two cards: "I'm a Farmer" / "I'm a Buyer".
+
+Step 2: On click, conditionally render the correct form on the same page using a useState variable.
+
+Farmer Form: farm_name, pickup_address, nid_number.
+
+Buyer Form: business_name, delivery_address, nid_number.
+
+Action: On submit, POST /api/auth/setup-profile/ with { role, ...formData }.
+
+On Success (200): The user object in Zustand is now stale.
+
+POST /api/auth/user/ to get the new user object (which now has profile data).
+
+Update the store: useAuthStore.getState().setUser(newUser).
+
+toast.success('Profile complete!') → Redirect by role (user.role === 'farmer' ? '/dashboard' : '/market').
+
+Page 4: LoginPage.jsx (/login)
+For returning users.
+
+Action: POST /api/auth/login/ with { email, password }.
+
+On Success (200):
+
+Returns: { access_token, user }.
+
+Backend: Sets the refresh_token HttpOnly cookie.
+
+Frontend: useAuthStore.getState().login(access_token, user) → toast.success('Welcome back!') → Redirect by role.
+
+📦 3. Core Application Pages
+🚜 Farmer Section
+FarmerHubPage.jsx (/dashboard)
+
+Use MUI <Tabs> for navigation.
+
+Tab 1 ("Orders"): GET /api/farmer-orders/. Show a list of new orders.
+
+"Confirm & Ship" button → POST /api/farmer-orders/:id/ship/ → toast.success('Delivery booked!').
+
+Tab 2 ("My Products"): GET /api/my-products/. Show a DataGrid of products.
+
+"Update Stock" button → PATCH /api/my-products/:id/.
+
+🛒 Buyer Section
+MarketplacePage.jsx (/market)
+
+GET /api/products/. Show a responsive MUI <Grid> of ProductCard components.
+
+"Add to Cart" button → useCartStore.getState().addToCart(product).
+
+CartPage.jsx (/cart)
+
+Show items from useCartStore.
+
+"Place Order" button → POST /api/orders/ → toast.success('Order placed!') → useCartStore.getState().clearCart().
+
+OrderHistoryPage.jsx (/my-orders)
+
+GET /api/orders/. List all past orders.
+
+"Track" button → GET /api/orders/:id/track/ → Show status in a modal.
+
+🧩 4. Core Project Files (The "Engine")
+theme.js
+createTheme from @mui/material/styles.
+
+Define the palette with primary: { main: '#10B981' }, secondary: { main: '#F59E0B' }, etc.
+
+store/useAuthStore.js (Zustand)
+access_token, user, isAuth.
+
+login(token, user):
+
+Sets state: access_token = token, user = user, isAuth = true.
+
+Sets Axios default header: api.defaults.headers.common['Authorization'] = \Bearer ${token}`;`.
+
+logout():
+
+Sets state: access_token = null, user = null, isAuth = false.
+
+Deletes Axios default header: delete api.defaults.headers.common['Authorization'];.
+
+setUser(user): (For updating the profile after setup).
+
+store/useCartStore.js (Zustand)
+items: []
+
+addToCart(product), removeFromCart(productId), clearCart().
+
+api.js (Axios - The Most Important File)
+Create api = axios.create({ baseURL: '...', withCredentials: true }).
+
+Request Interceptor: Automatically attaches the access_token from useAuthStore to every request.
+
+Response Interceptor (401 Refresh Logic):
+
+On error.response.status === 401:
+
+Check if a refresh is already in progress. If so, wait for it.
+
+If not, set isRefreshing = true.
+
+Call POST /api/auth/refresh/ (it will use the HttpOnly cookie).
+
+On Success:
+
+Get new { access_token }.
+
+useAuthStore.getState().login(access_token, ...) (update token).
+
+Retry the original failed request with the new token.
+
+On Fail (Refresh failed):
+
+useAuthStore.getState().logout().
+
+window.location.href = '/login'.
+
+Finally, set isRefreshing = false.
+
+App.jsx (Router)
+<BrowserRouter> with all routes.
+
+Use React.lazy() and <Suspense fallback={...}> to code-split all main pages (MarketplacePage, FarmerHubPage, etc.).
+
+Wrap authenticated routes in <ProtectedRoute />.
+
+components/ProtectedRoute.jsx
+Gets isAuth from useAuthStore.
+
+If !isAuth, return <Navigate to="/login" replace />.
+
+Returns <Outlet /> if authenticated.
+
+🧠 5. Demo Mode & Optimizations
+Demo Mode: In your API functions (e.g., fetchProducts), use if (import.meta.env.VITE_USE_DEMO === 'true') { return mockProducts; } before the try/catch block.
+
+Optimizations:
+
+Wrap ProductCard and OrderRow in React.memo.
+
+Use a useDebounce hook (300ms) on the search input in MarketplacePage before firing the API request.
+
+Use MUI <Grid> for all page layouts to ensure responsiveness.
+
+Deployment: Your vite.config.js is ready for Vercel/Netlify. Include a _redirects (for Netlify) or vercel.json file to handle SPA routing.
