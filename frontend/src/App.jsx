@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import AnonymousRoute from './components/AnonymousRoute';
 import useAuthStore from './store/useAuthStore';
 import { initUploadService } from './utils/uploadService';
 
@@ -60,9 +61,11 @@ function App() {
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Navigate to="/market" replace />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify-otp" element={<VerifyOTPPage />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route element={<AnonymousRoute />}>
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify-otp" element={<VerifyOTPPage />} />
+              <Route path="/login" element={<LoginPage />} />
+            </Route>
             
             {/* Public store pages */}
             <Route path="/store/seller/:id" element={<SellerStorePage />} />

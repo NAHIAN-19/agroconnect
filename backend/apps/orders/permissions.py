@@ -73,3 +73,12 @@ class IsSellerForShipment(permissions.BasePermission):
         seller_ids = obj.seller_ids
         return request.user.id in seller_ids
 
+class IsSeller(permissions.BasePermission):
+    """Permission class: Only sellers can access"""
+
+    def has_permission(self, request, view):
+        return (
+            request.user and
+            request.user.is_authenticated and
+            request.user.role == 'SELLER'
+        )

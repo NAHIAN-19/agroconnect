@@ -94,6 +94,8 @@ api.interceptors.request.use(
 );
 
 // Response Interceptor: Handle 401 and refresh token
+import toast from 'react-hot-toast';
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -101,6 +103,12 @@ api.interceptors.response.use(
 
     // If error is not 401 or request was already retried, reject
     if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Exclude auth endpoints from refresh logic
+    const authEndpoints = ['/api/v1/auth/login/', '/api/v1/auth/register/'];
+    if (authEndpoints.includes(originalRequest.url)) {
       return Promise.reject(error);
     }
 
@@ -122,6 +130,7 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
+      toast.loading('Session expired. Refreshing...');
       // Try both possible refresh token endpoints
       let response;
       try {
@@ -153,6 +162,8 @@ api.interceptors.response.use(
           useAuthStore.getState().login(access_token, currentUser || {});
         }
 
+        toast.dismiss();
+        toast.success('Session refreshed successfully');
         processQueue(null, access_token);
 
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
@@ -161,6 +172,8 @@ api.interceptors.response.use(
         throw new Error('No access token in refresh response');
       }
     } catch (refreshError) {
+      toast.dismiss();
+      toast.error('Session expired. Please login again');
       processQueue(refreshError, null);
       useAuthStore.getState().logout();
       window.location.href = '/login';

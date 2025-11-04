@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sprout, ShoppingCart, UserCheck, ArrowLeft, Store, MapPin, CreditCard, Image as ImageIcon } from 'lucide-react';
+import { Sprout, ShoppingCart, UserCheck, ArrowLeft, Store, MapPin, CreditCard, Image as ImageIcon, Upload, Loader2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api';
 import useAuthStore from '../store/useAuthStore';
+import { uploadImage } from '../utils/cloudinary';
 
 const SetupProfilePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const profileImageInputRef = useRef(null);
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const {
@@ -51,7 +56,7 @@ const SetupProfilePage = () => {
           store_name: data.store_name,
           pickup_address: data.pickup_address,
           nid_number: data.nid_number,
-          picture: data.picture || '',
+          picture: uploadedImageUrl || '',
         };
         //payload.buyer_profile = {};
       } else if (role === 'BUYER') {
@@ -59,7 +64,7 @@ const SetupProfilePage = () => {
           business_name: data.business_name,
           delivery_address: data.delivery_address,
           nid_number: data.nid_number,
-          picture: data.picture || '',
+          picture: uploadedImageUrl || '',
         };
         //payload.seller_profile = {};
       }
@@ -299,19 +304,83 @@ const SetupProfilePage = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                    <ImageIcon className="w-4 h-4 inline mr-2" />
-                    Picture URL (Optional)
-                  </label>
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Profile Preview"
+                          className="w-32 h-32 rounded-full object-cover border-4 border-primary-200 dark:border-primary-800 shadow-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (imagePreview.startsWith('blob:')) {
+                              URL.revokeObjectURL(imagePreview);
+                            }
+                            setImagePreview(null);
+                            setUploadedImageUrl(null);
+                            if (profileImageInputRef.current) {
+                              profileImageInputRef.current.value = '';
+                            }
+                          }}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
+                          title="Remove image"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-full border-4 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                        <ImageIcon className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => profileImageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 shadow-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Upload profile picture"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Upload className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   <input
-                    type="url"
-                    {...register('picture')}
-                    className="input-modern"
-                    placeholder="Enter URL for your profile picture"
+                    ref={profileImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      const localPreview = URL.createObjectURL(file);
+                      setImagePreview(localPreview);
+                      setUploadingImage(true);
+
+                      try {
+                        const imageUrl = await uploadImage(file, 'agroconnect_profiles');
+                        URL.revokeObjectURL(localPreview);
+                        setImagePreview(imageUrl);
+                        setUploadedImageUrl(imageUrl);
+                        toast.success('Image uploaded!');
+                      } catch (error) {
+                        URL.revokeObjectURL(localPreview);
+                        toast.error(error.message || 'Failed to upload image');
+                        setImagePreview(null);
+                        setUploadedImageUrl(null);
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Provide a URL to your profile picture (optional)
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Upload a profile picture (optional)
                   </p>
                 </div>
               </>
@@ -374,19 +443,83 @@ const SetupProfilePage = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                    <ImageIcon className="w-4 h-4 inline mr-2" />
-                    Picture URL (Optional)
-                  </label>
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Profile Preview"
+                          className="w-32 h-32 rounded-full object-cover border-4 border-primary-200 dark:border-primary-800 shadow-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (imagePreview.startsWith('blob:')) {
+                              URL.revokeObjectURL(imagePreview);
+                            }
+                            setImagePreview(null);
+                            setUploadedImageUrl(null);
+                            if (profileImageInputRef.current) {
+                              profileImageInputRef.current.value = '';
+                            }
+                          }}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
+                          title="Remove image"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-full border-4 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                        <ImageIcon className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => profileImageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-2 shadow-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Upload profile picture"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Upload className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   <input
-                    type="url"
-                    {...register('picture')}
-                    className="input-modern"
-                    placeholder="Enter URL for your profile picture"
+                    ref={profileImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      const localPreview = URL.createObjectURL(file);
+                      setImagePreview(localPreview);
+                      setUploadingImage(true);
+
+                      try {
+                        const imageUrl = await uploadImage(file, 'agroconnect_profiles');
+                        URL.revokeObjectURL(localPreview);
+                        setImagePreview(imageUrl);
+                        setUploadedImageUrl(imageUrl);
+                        toast.success('Image uploaded!');
+                      } catch (error) {
+                        URL.revokeObjectURL(localPreview);
+                        toast.error(error.message || 'Failed to upload image');
+                        setImagePreview(null);
+                        setUploadedImageUrl(null);
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Provide a URL to your profile picture (optional)
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Upload a profile picture (optional)
                   </p>
                 </div>
               </>

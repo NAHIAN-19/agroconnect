@@ -436,8 +436,10 @@ def create_redx_shipment(order):
     # RedX API base URL
     if is_sandbox:
         base_url = 'https://sandbox.redx.com.bd/v1.0.0-beta'
+        logger.info("Using RedX sandbox environment")
     else:
         base_url = 'https://api.redx.com.bd/v1.0.0-beta'
+        logger.info("Using RedX production environment")
     
     # Calculate parcel weight from order items (in grams)
     # Default to 500g if no items or weights available

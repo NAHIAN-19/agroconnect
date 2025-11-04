@@ -1,18 +1,18 @@
-import { memo, useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Star, CheckCircle2, Package, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api';
 import useCartStore from '../store/useCartStore';
 import useAuthStore from '../store/useAuthStore';
+import useWishlistStore from '../store/useWishlistStore';
 import { formatCurrency } from '../data/demoData';
 
 const ProductCard = memo(({ product }) => {
   const navigate = useNavigate();
   const addToCart = useCartStore((state) => state.addToCart);
   const user = useAuthStore((state) => state.user);
-  const [isInWishlist, setIsInWishlist] = useState(false);
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore();
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Check if product belongs to current user (seller)
@@ -21,27 +21,7 @@ const ProductCard = memo(({ product }) => {
     return product.seller_id === user.id || product.farmer_id === user.id;
   }, [user, product]);
 
-  // Check if product is in wishlist
-  useEffect(() => {
-    if (!user || !user.id) {
-      setIsInWishlist(false);
-      return;
-    }
-
-    const checkWishlist = async () => {
-      try {
-        const response = await api.get(`/api/v1/wishlist/check/?product_id=${product.id}`);
-        if (response?.data?.data?.is_in_wishlist) {
-          setIsInWishlist(true);
-        }
-      } catch (error) {
-        // Silently fail - product might not be in wishlist
-        setIsInWishlist(false);
-      }
-    };
-
-    checkWishlist();
-  }, [user, product.id]);
+  const isProductInWishlist = isInWishlist(product.id);
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -70,19 +50,11 @@ const ProductCard = memo(({ product }) => {
 
     setWishlistLoading(true);
     try {
-      if (isInWishlist) {
-        // Remove from wishlist
-        await api.delete('/api/v1/wishlist/remove/', {
-          data: { product_id: product.id }
-        });
-        setIsInWishlist(false);
+      if (isProductInWishlist) {
+        await removeFromWishlist(product.id);
         toast.success('Removed from wishlist');
       } else {
-        // Add to wishlist
-        await api.post('/api/v1/wishlist/add/', {
-          product_id: product.id
-        });
-        setIsInWishlist(true);
+        await addToWishlist(product.id);
         toast.success('Added to wishlist');
       }
     } catch (error) {
@@ -115,12 +87,12 @@ const ProductCard = memo(({ product }) => {
             onClick={handleWishlistToggle}
             disabled={wishlistLoading}
             className={`absolute top-3 right-3 p-2 rounded-full shadow-lg transition-all z-10 ${
-              isInWishlist
+              isProductInWishlist
                 ? 'bg-red-500 text-white hover:bg-red-600'
                 : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
             } ${wishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`} />
+            <Heart className={`w-5 h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
           </button>
         )}
         {product.verified && (
