@@ -11,6 +11,10 @@ const useAuthStore = create((set, get) => ({
     localStorage.setItem('user', JSON.stringify(user));
     set({ access_token: token, user, isAuth: true });
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    // Fetch wishlist after login
+    const useWishlistStore = require('./useWishlistStore').default;
+    useWishlistStore.getState().fetchWishlist();
   },
 
   logout: () => {

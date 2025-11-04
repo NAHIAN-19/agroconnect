@@ -15,6 +15,7 @@ class Order(models.Model):
     class StatusChoices(models.TextChoices):
         PENDING = 'pending', 'Pending'
         PAID = 'paid', 'Paid'
+        CONFIRMED = 'confirmed', 'Confirmed'
         PROCESSING = 'processing', 'Processing'
         SHIPPED = 'shipped', 'Shipped'
         DELIVERED = 'delivered', 'Delivered'
@@ -24,6 +25,7 @@ class Order(models.Model):
     # Keep constants for backwards compatibility
     STATUS_PENDING = StatusChoices.PENDING
     STATUS_PAID = StatusChoices.PAID
+    STATUS_CONFIRMED = StatusChoices.CONFIRMED
     STATUS_PROCESSING = StatusChoices.PROCESSING
     STATUS_SHIPPED = StatusChoices.SHIPPED
     STATUS_DELIVERED = StatusChoices.DELIVERED

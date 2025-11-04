@@ -21,7 +21,7 @@ import logging
 
 from .filters import OrderFilter
 from utils.pagination import OrderPagination
-from apps.orders.permissions import IsBuyer, IsBuyerOrReadOnly, IsOrderOwnerOrSeller, IsSellerForShipment
+from apps.orders.permissions import IsBuyer, IsBuyerOrReadOnly, IsOrderOwnerOrSeller, IsSellerForShipment, IsSeller
 from apps.users.permissions import IsAdminVerified
 
 logger = logging.getLogger(__name__)
@@ -233,6 +233,49 @@ class OrderViewSet(viewsets.ModelViewSet):
             data=serializer.data
         )
     
+    @action(detail=True, methods=['patch'], permission_classes=[IsSeller])
+    def confirm(self, request, pk=None):
+        """
+        Seller endpoint to confirm an order and deduct product quantity from stock.
+        """
+        order = self.get_object()
+
+        # Verify seller has product in this order
+        seller_ids = order.seller_ids
+        if request.user.id not in seller_ids:
+            return APIResponse.error(
+                message="You can only confirm orders containing your products",
+                status_code=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if the order is already confirmed or shipped
+        if order.status in [Order.StatusChoices.CONFIRMED, Order.StatusChoices.SHIPPED]:
+            return APIResponse.error(
+                message="Order is already confirmed or shipped",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Deduct product quantity from stock
+        for item in order.order_items.all():
+            product = item.product
+            if product.stock < item.quantity:
+                return APIResponse.error(
+                    message=f"Not enough stock for product: {product.name}",
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+            product.stock -= item.quantity
+            product.save()
+
+        # Update order status
+        order.status = Order.StatusChoices.CONFIRMED
+        order.save()
+
+        serializer = self.get_serializer(order)
+        return APIResponse.success(
+            message="Order confirmed successfully. Stock updated.",
+            data=serializer.data
+        )
+
     @action(detail=True, methods=['patch'], permission_classes=[IsSellerForShipment])
     def ship(self, request, pk=None):
         """
@@ -253,6 +296,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         if order.payment_status != 'success' and order.payment_method == Order.PAYMENT_METHOD_SSLCOMMERZ:
             return APIResponse.error(
                 message="Cannot ship order: Payment not completed",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the order is confirmed
+        if order.status != Order.StatusChoices.CONFIRMED:
+            return APIResponse.error(
+                message="Cannot ship order: Order not confirmed",
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
