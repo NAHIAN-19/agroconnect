@@ -8,3 +8,4 @@ node-modules/
 logs/
 static/
 staticfiles/
+db.sqlite3
