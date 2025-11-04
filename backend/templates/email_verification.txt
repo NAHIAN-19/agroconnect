@@ -1,0 +1,32 @@
+Subject: Verify Your Email Address - AgroConnect
+
+Hello {{user_name}},
+
+Welcome to AgroConnect! [cite_start]We're excited to have you join our fresh produce community. [cite: 1]
+[cite_start]To complete your registration and secure your account, please verify your email address using the code below: [cite: 2]
+
+VERIFICATION CODE: {{otp_code}}
+
+Simply enter this 6-digit code in the verification screen to activate your account.
+[cite_start]This code will expire in 10 minutes for security reasons. [cite: 3]
+
+[cite_start]SECURITY NOTICE: [cite: 4]
+[cite_start]• Never share this code with anyone [cite: 4]
+[cite_start]• AgroConnect staff will never ask for your verification code [cite: 4]
+[cite_start]• If you didn't create an account, please ignore this email [cite: 4]
+
+Once verified, you'll be able to:
+• Choose your role (Farmer or Buyer)
+• List your fresh produce (as a Farmer)
+• Discover local food (as a Buyer)
+• Connect directly with your community
+
+Having trouble?
+[cite_start]Contact our support team at support@agroconnect.com [cite: 5]
+
+This email was sent to {{user_email}}
+
+Best regards,
+The AgroConnect Team
+
+© 2025 AgroConnect. All rights reserved.

@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-gray-50 via-green-50 to-amber-50 dark:from-gray-900 dark:via-green-900 dark:to-amber-900 text-gray-900 dark:text-gray-100;
+    font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Space Grotesk', 'Inter', sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 800;
+  }
+
+  h2 {
+    font-size: 2.25rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.875rem;
+    font-weight: 600;
+  }
+
+  p {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #4b5563;
+  }
+
+  .dark p {
+    color: #d1d5db;
+  }
+
+  button {
+    font-family: 'Inter', 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  input, textarea, select {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+  }
+
+  /* Modern color scheme for text */
+  .text-primary {
+    color: #059669;
+  }
+
+  .dark .text-primary {
+    color: #34d399;
+  }
+
+  .text-accent {
+    color: #d97706;
+  }
+
+  .dark .text-accent {
+    color: #fbbf24;
+  }
+
+  /* Enhanced gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Font size utilities */
+  .text-display {
+    font-family: 'Poppins', 'Space Grotesk', sans-serif;
+    font-weight: 700;
+  }
+
+  .text-body {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border border-white/20 shadow-glass;
+  }
+  
+  .glass-strong {
+    @apply bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl border border-white/30 shadow-glass;
+  }
+  
+  .neu-card {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-neu-lg;
+  }
+  
+  .neu-button {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-xl shadow-neu-sm hover:shadow-neu-inset transition-all duration-200;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent;
+  }
+  
+  .floating {
+    @apply animate-float;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-floating;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-farm text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-sunset text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
+  }
+  
+  .input-modern {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800 transition-all duration-200;
+  }
+}
+

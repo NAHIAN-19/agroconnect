@@ -1,0 +1,10 @@
+.env
+env
+__pycache__/
+migrations/*
+!migrations/__init__.py
+celerybeat-schedule
+node-modules/
+logs/
+static/
+staticfiles/
