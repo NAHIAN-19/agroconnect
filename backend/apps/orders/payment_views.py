@@ -15,6 +15,37 @@ import json
 from utils.response import APIResponse
 from .models import Order
 from .utils import create_sslcommerz_session, validate_sslcommerz_transaction
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import logging
+
+logger = logging.getLogger(__name__)
+
+def send_seller_notification(order):
+    """
+    Helper function to send WebSocket notification to sellers.
+    """
+    try:
+        channel_layer = get_channel_layer()
+        seller_ids = order.seller_ids
+        buyer_name = order.buyer.get_full_name() or order.buyer.email
+
+        for seller_id in seller_ids:
+            group_name = f"user_{seller_id}"
+            event = {
+                "type": "order_notification",
+                "message": f"Payment successful for order {order.order_number}",
+                "notification_type": "payment_success",
+                "order_id": order.id,
+                "order_number": order.order_number,
+                "buyer_name": buyer_name,
+            }
+            async_to_sync(channel_layer.group_send)(group_name, event)
+
+        logger.info(f"Sent payment success notifications for order {order.id} to sellers: {seller_ids}")
+
+    except Exception as e:
+        logger.error(f"Failed to send WebSocket notification for order {order.id}: {e}")
 
 # Get FRONTEND_URL from settings
 def get_frontend_url():
@@ -113,6 +144,8 @@ def payment_success(request):
                 order.payment_date = timezone.now()
                 order.save()
                 
+                send_seller_notification(order)
+
                 frontend_url = get_frontend_url()
                 return redirect(f"{frontend_url}/payment/success?order_id={order.id}&order_number={order.order_number}")
             else:
@@ -211,6 +244,8 @@ def payment_ipn(request):
                 order.payment_date = timezone.now()
                 order.save()
                 
+                send_seller_notification(order)
+
                 return Response({'status': 'updated'})
         
         elif status_val == 'FAILED':

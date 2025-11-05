@@ -20,6 +20,7 @@ import { useCache } from '../hooks/useCache';
 import { formatCurrency } from '../data/demoData';
 import useCartStore from '../store/useCartStore';
 import useAuthStore from '../store/useAuthStore';
+import useWishlistStore from '../store/useWishlistStore';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -28,11 +29,11 @@ const ProductDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const { getCached } = useCache();
   const addToCart = useCartStore((state) => state.addToCart);
   const user = useAuthStore((state) => state.user);
+  const { fetchWishlist, isInWishlist, addToWishlist, removeFromWishlist, wishlist } = useWishlistStore();
 
   // Check if product belongs to current user (seller)
   const isOwnProduct = useMemo(() => {
@@ -40,27 +41,17 @@ const ProductDetailPage = () => {
     return product.seller_id === user.id || product.farmer_id === user.id;
   }, [user, product]);
 
-  // Check if product is in wishlist
+  // Fetch wishlist on mount if not already fetched
   useEffect(() => {
-    if (!user || !user.id || !product?.id) {
-      setIsInWishlist(false);
-      return;
+    if (user && user.id && wishlist.length === 0) {
+      fetchWishlist();
     }
+  }, [user, fetchWishlist, wishlist.length]);
 
-    const checkWishlist = async () => {
-      try {
-        const response = await api.get(`/api/v1/wishlist/check/?product_id=${product.id}`);
-        if (response?.data?.data?.is_in_wishlist) {
-          setIsInWishlist(true);
-        }
-      } catch (error) {
-        // Silently fail - product might not be in wishlist
-        setIsInWishlist(false);
-      }
-    };
-
-    checkWishlist();
-  }, [user, product?.id]);
+  const isProductInWishlist = useMemo(() => {
+    if (!product?.id) return false;
+    return isInWishlist(product.id);
+  }, [product, isInWishlist, wishlist]);
 
   useEffect(() => {
     const fetchProduct = async () => {

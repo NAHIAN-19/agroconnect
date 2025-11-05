@@ -12,7 +12,7 @@ const ProductCard = memo(({ product }) => {
   const navigate = useNavigate();
   const addToCart = useCartStore((state) => state.addToCart);
   const user = useAuthStore((state) => state.user);
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore();
+  const { addToWishlist, removeFromWishlist } = useWishlistStore();
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Check if product belongs to current user (seller)
@@ -21,7 +21,7 @@ const ProductCard = memo(({ product }) => {
     return product.seller_id === user.id || product.farmer_id === user.id;
   }, [user, product]);
 
-  const isProductInWishlist = isInWishlist(product.id);
+  const isProductInWishlist = product.is_in_wishlist;
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);

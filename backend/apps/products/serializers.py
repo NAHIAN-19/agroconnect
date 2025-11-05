@@ -17,6 +17,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     seller_name = serializers.CharField(read_only=True)
     rating = serializers.FloatField(read_only=True)
     reviews = serializers.IntegerField(read_only=True)
+    is_in_wishlist = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -37,8 +38,13 @@ class ProductListSerializer(serializers.ModelSerializer):
             'rating',
             'reviews',
             'created_at',
+            'is_in_wishlist',
         ]
         read_only_fields = ['created_at', 'rating', 'reviews', 'verified']
+
+    def get_is_in_wishlist(self, obj):
+        wishlist_product_ids = self.context.get('wishlist_product_ids', set())
+        return obj.id in wishlist_product_ids
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):

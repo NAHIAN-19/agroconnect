@@ -50,76 +50,6 @@ const ProfilePage = () => {
     reset,
   } = useForm();
 
-  // Function to save image URL to backend (called automatically after upload completes)
-  const saveImageToBackend = useCallback(async (imageUrl, metadata = {}) => {
-    try {
-      const currentProfile = profile;
-      const currentRole = currentProfile?.role || user?.role;
-      const isUserSeller = currentRole === 'SELLER' || currentRole === 'seller';
-      const isUserBuyer = currentRole === 'BUYER' || currentRole === 'buyer';
-      
-      const imagePayload = {
-        avatar_url: imageUrl,
-      };
-
-      // Add to seller_profile or buyer_profile based on role
-      if (isUserSeller) {
-        imagePayload.seller_profile = {
-          ...(currentProfile?.seller_profile || {}),
-          picture: imageUrl,
-        };
-      } else if (isUserBuyer) {
-        imagePayload.buyer_profile = {
-          ...(currentProfile?.buyer_profile || {}),
-          picture: imageUrl,
-        };
-      }
-
-      console.log('Auto-saving image URL to backend:', imagePayload);
-      const response = await api.patch('/api/v1/profile/my/', imagePayload);
-      
-      // Handle response
-      let updatedProfile = response.data;
-      if (updatedProfile?.data) {
-        updatedProfile = updatedProfile.data;
-      }
-      
-      // Map profile to seller_profile or buyer_profile
-      if (updatedProfile?.profile) {
-        if (isUserSeller) {
-          updatedProfile.seller_profile = updatedProfile.profile;
-        } else if (isUserBuyer) {
-          updatedProfile.buyer_profile = updatedProfile.profile;
-        }
-        delete updatedProfile.profile;
-      }
-      
-      // Update local state
-      setProfile((prev) => ({
-        ...prev,
-        avatar_url: imageUrl,
-        ...(isUserSeller && prev?.seller_profile ? { seller_profile: { ...prev.seller_profile, picture: imageUrl } } : {}),
-        ...(isUserBuyer && prev?.buyer_profile ? { buyer_profile: { ...prev.buyer_profile, picture: imageUrl } } : {}),
-      }));
-      
-      // Update user in store with fresh data from backend response
-      const updatedUserData = {
-        ...user,
-        avatar_url: imageUrl,
-        ...(updatedProfile.avatar_url ? { avatar_url: updatedProfile.avatar_url } : {}),
-      };
-      setUser(updatedUserData);
-      setUploadingImageUrl(null); // Clear upload tracking
-      
-      // Show subtle notification
-      toast.success('Picture updated!', { duration: 2000 });
-    } catch (error) {
-      console.error('Error saving image URL:', error);
-      toast.error('Image uploaded but failed to save. Please try again.');
-      setUploadingImageUrl(null);
-    }
-  }, [profile, user]);
-
   useEffect(() => {
     fetchProfile();
     // Check localStorage to see if we've shown verification toast before
@@ -146,8 +76,8 @@ const ProfilePage = () => {
           setUploadingImageUrl(imageUrl);
           setUploadingImage(false);
           
-          // Save to backend
-          await saveImageToBackend(imageUrl, metadata);
+          // No separate save, just update state
+          // The main onSubmit function will handle saving.
         } else {
           console.error('Upload failed via Service Worker:', error);
           toast.error(error || 'Upload failed');
@@ -363,45 +293,27 @@ const ProfilePage = () => {
   const onSubmit = async (data) => {
     setSaving(true);
     try {
-      // Prepare the payload structure for backend
-      // NOTE: Don't include image URLs here - they're saved automatically when upload completes
       const payload = { ...data };
-      
-      // Structure seller_profile data properly (without picture - that's handled separately)
-      if (isSeller) {
-        payload.seller_profile = {
-          ...(profile.seller_profile || {}),
-          ...(data.seller_profile || {}),
-        };
-        // Don't include picture in this save - it will be saved when upload completes
-        if (payload.seller_profile.picture && !uploadingImageUrl) {
-          // Only include if it's an already uploaded URL (not a new upload)
-          delete payload.seller_profile.picture;
+
+      if (uploadingImageUrl) {
+        payload.avatar_url = uploadingImageUrl;
+        if (isSeller) {
+          payload.seller_profile = {
+            ...(profile.seller_profile || {}),
+            ...(data.seller_profile || {}),
+            picture: uploadingImageUrl,
+          };
+        }
+        if (isBuyer) {
+          payload.buyer_profile = {
+            ...(profile.buyer_profile || {}),
+            ...(data.buyer_profile || {}),
+            picture: uploadingImageUrl,
+          };
         }
       }
-      
-      // Structure buyer_profile data properly (without picture)
-      if (isBuyer) {
-        payload.buyer_profile = {
-          ...(profile.buyer_profile || {}),
-          ...(data.buyer_profile || {}),
-        };
-        // Don't include picture in this save - it will be saved when upload completes
-        if (payload.buyer_profile.picture && !uploadingImageUrl) {
-          // Only include if it's an already uploaded URL (not a new upload)
-          delete payload.buyer_profile.picture;
-        }
-      }
-      
-      // Don't include avatar_url if we're currently uploading (it will be saved separately)
-      if (uploadingImage || uploadingImageUrl) {
-        delete payload.avatar_url;
-      }
-      
-      // Always use backend API for PATCH
-      console.log('Updating profile via PATCH (text fields only):', '/api/v1/profile/my/', payload);
+
       const response = await api.patch('/api/v1/profile/my/', payload);
-      console.log('Profile update response:', response.data);
       
       // Handle the new API response structure
       let updatedProfile = response.data;

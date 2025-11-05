@@ -15,24 +15,24 @@ const useWishlistStore = create((set, get) => ({
   },
   addToWishlist: async (productId) => {
     try {
-      await api.post('/api/v1/wishlist/add/', { product_id: productId });
-      set((state) => ({
-        wishlist: [...state.wishlist, { product: { id: productId } }],
-      }));
+      const response = await api.post('/api/v1/wishlist/', { product: productId });
+      // After adding, fetch the whole wishlist to get the proper item with its own id
+      get().fetchWishlist();
     } catch (error) {
       // Handle error
     }
   },
   removeFromWishlist: async (productId) => {
     try {
-      await api.delete('/api/v1/wishlist/remove/', {
-        data: { product_id: productId },
-      });
-      set((state) => ({
-        wishlist: state.wishlist.filter(
-          (item) => item.product.id !== productId
-        ),
-      }));
+        const wishlistItem = get().wishlist.find(item => item.product.id === productId);
+        if (wishlistItem) {
+            await api.delete(`/api/v1/wishlist/${wishlistItem.id}/`);
+            set((state) => ({
+                wishlist: state.wishlist.filter(
+                (item) => item.product.id !== productId
+                ),
+            }));
+        }
     } catch (error) {
       // Handle error
     }

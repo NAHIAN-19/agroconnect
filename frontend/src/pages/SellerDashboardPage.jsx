@@ -318,26 +318,31 @@ const SellerDashboardPage = () => {
     }
   };
 
+  const handleConfirm = async (orderId) => {
+    try {
+      const response = await api.patch(`/api/v1/orders/${orderId}/confirm/`);
+      toast.success(response.data?.message || 'Order confirmed successfully!');
+      fetchOrders();
+      if (activeTab === 0) {
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      toast.error(error.response?.data?.message || 'Failed to confirm order');
+    }
+  };
+
   const handleShip = async (orderId) => {
     try {
       const response = await api.patch(`/api/v1/orders/${orderId}/ship/`);
-      
-      // Handle APIResponse format
-      const message = response.data?.message || 'Order shipped successfully!';
-      toast.success(message);
+      toast.success(response.data?.message || 'Order shipped successfully!');
       fetchOrders();
-      
-      // Refresh stats after shipping
       if (activeTab === 0) {
         fetchStats();
       }
     } catch (error) {
       console.error('Error shipping order:', error);
-      const errorMsg = error.response?.data?.message || 
-                      error.response?.data?.errors || 
-                      error.message || 
-                      'Failed to update order';
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || 'Failed to ship order');
     }
   };
 
@@ -772,23 +777,32 @@ const SellerDashboardPage = () => {
                             {getStatusIcon(order.status)}
                           </div>
                           <div className="flex flex-col space-y-2 w-full">
-                            {(order.status === 'pending' || order.status === 'paid') && (
-                              <>
+                            {order.status === 'paid' && (
+                                <>
                                 <button
-                                  onClick={() => handleShip(order.id)}
-                                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center justify-center space-x-2"
+                                    onClick={() => handleConfirm(order.id)}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center justify-center space-x-2"
                                 >
-                                  <Truck className="w-4 h-4" />
-                                  <span>Ship Order</span>
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>Confirm Order</span>
                                 </button>
                                 <button
-                                  onClick={() => handleCancel(order.id)}
-                                  className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center justify-center space-x-2"
+                                    onClick={() => handleCancel(order.id)}
+                                    className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center justify-center space-x-2"
                                 >
-                                  <XCircle className="w-4 h-4" />
-                                  <span>Cancel</span>
+                                    <XCircle className="w-4 h-4" />
+                                    <span>Cancel</span>
                                 </button>
-                              </>
+                                </>
+                            )}
+                            {order.status === 'confirmed' && (
+                                <button
+                                onClick={() => handleShip(order.id)}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center justify-center space-x-2"
+                                >
+                                <Truck className="w-4 h-4" />
+                                <span>Ship Order</span>
+                                </button>
                             )}
                             {order.status === 'shipped' && order.redx_tracking_number && (
                               <button
