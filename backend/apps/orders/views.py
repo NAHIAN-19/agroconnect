@@ -163,41 +163,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         # The OrderCreateSerializer should have a 'buyer' field
         order = serializer.save(buyer=request.user)
         
-        # --- Notify sellers about new order via websocket ---
-        try:
-            # 1. Get the channel layer
-            channel_layer = get_channel_layer()
-
-            # 2. Get the unique IDs of all sellers in this order
-            # (Assuming your Order model has a way to get this)
-            seller_ids = order.seller_ids 
-
-            # 3. Get buyer's name for the notification
-            buyer_name = request.user.get_full_name() or request.user.email
-
-            # 4. Loop and send a notification to each seller's group
-            for seller_id in seller_ids:
-                group_name = f"seller_{seller_id}"
-                event = {
-                    "type": "seller.notification", # This is the consumer method name
-                    "message": f"You have a new order (ID: {order.order_number}) from {buyer_name}.",
-                    "notification_type": "new_order",
-                    "order_id": order.id,
-                    "order_number": order.order_number,
-                    "buyer_name": buyer_name,
-                }
-                
-                # Use async_to_sync to call the async group_send from sync code
-                async_to_sync(channel_layer.group_send)(group_name, event)
-            
-            logger.info(f"Sent new order notifications to sellers: {seller_ids}")
-
-        except Exception as e:
-            # Log the error but don't crash the API call
-            # The order was created, but notification failed.
-            logger.error(f"Failed to send WebSocket notification for order {order.id}: {e}")
-        
-        # --- End of WebSocket notification ---
 
 
         # Return full order detail

@@ -71,6 +71,18 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductCreateUpdateSerializer
         return ProductDetailSerializer
 
+    def get_serializer_context(self):
+        """
+        Inject wishlist product IDs into the serializer context.
+        """
+        context = super().get_serializer_context()
+        if self.request.user.is_authenticated and self.action == 'list':
+            wishlist = self.request.user.wishlist.all()
+            context['wishlist_product_ids'] = set(wishlist.values_list('product_id', flat=True))
+        else:
+            context['wishlist_product_ids'] = set()
+        return context
+
     def get_queryset(self):
         """Optimize queryset with select_related and prefetch_related"""
         queryset = super().get_queryset()

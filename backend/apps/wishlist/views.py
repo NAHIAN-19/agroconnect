@@ -142,24 +142,4 @@ class WishlistViewSet(viewsets.ModelViewSet):
             message="Product removed from wishlist successfully"
         )
     
-    @action(detail=False, methods=['get'], url_path='check')
-    def check_product(self, request):
-        """Check if a product is in user's wishlist"""
-        product_id = request.query_params.get('product_id')
-        
-        if not product_id:
-            return APIResponse.error(
-                message="product_id is required",
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        
-        is_in_wishlist = Wishlist.objects.filter(
-            user=request.user,
-            product_id=product_id
-        ).exists()
-        
-        return APIResponse.success(
-            message="Wishlist status retrieved successfully",
-            data={'is_in_wishlist': is_in_wishlist, 'product_id': int(product_id)}
-        )
 
