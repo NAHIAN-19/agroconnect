@@ -23,13 +23,14 @@ class TokenRefreshCookieSerializer(TokenRefreshSerializer):
     This serializer reads the refresh token from the HttpOnly cookie
     instead of the request body.
     """
+    refresh = serializers.CharField(required=False, write_only=True)
+
     def validate(self, attrs):
         # Read the cookie name from settings
         cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
         
         # Get the refresh token from the request cookies
         refresh_token = self.context['request'].COOKIES.get(cookie_name)
-        
         if not refresh_token:
             raise InvalidToken("No refresh token found in cookies.")
             

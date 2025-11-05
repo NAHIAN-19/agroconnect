@@ -1,3 +1,7 @@
 from .base import *
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
+
+SIMPLE_JWT["AUTH_COOKIE_SECURE"] = True
+SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"] = False
+SIMPLE_JWT["AUTH_COOKIE_SAMESITE"] = "None"

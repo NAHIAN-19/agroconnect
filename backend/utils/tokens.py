@@ -64,6 +64,20 @@ class AuthCookieHandler:
         except Exception as e:
             logger.error(f"Error generating tokens for user {user.id}: {e}")
             return {}
+        
+    def set_refresh_cookie(self, refresh_token: str) -> None:
+        """
+        Sets the refresh token as a secure HttpOnly cookie.
+        This is the single source of truth for cookie settings.
+        """
+        self.response.set_cookie(
+            key=self.cookie_name,
+            value=str(refresh_token),
+            max_age=self.cookie_lifetime.total_seconds(),
+            secure=self.cookie_secure,
+            httponly=self.cookie_httponly,
+            samesite=self.cookie_samesite
+        )
 
     def set(self, user: User) -> None:
         """
@@ -82,14 +96,7 @@ class AuthCookieHandler:
         refresh_token = tokens["refresh"]
 
         # --- Set Refresh Token in Cookie (using shared config) ---
-        self.response.set_cookie(
-            key=self.cookie_name,
-            value=refresh_token,
-            max_age=self.cookie_lifetime.total_seconds(),
-            secure=self.cookie_secure,
-            httponly=self.cookie_httponly,
-            samesite=self.cookie_samesite
-        )
+        self.set_refresh_cookie(refresh_token)
         
         # --- Add Access Token & User Data to Response Body ---
         if not isinstance(self.response.data, dict):

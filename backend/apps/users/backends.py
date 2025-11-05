@@ -21,8 +21,6 @@ class EmailBackend(ModelBackend):
         # --- THIS IS THE FIX ---
         # 1. Check the password
         # 2. Check if the user is active (user_can_authenticate checks is_active)
-        print(user.check_password(password))
-        print(self.user_can_authenticate(user))
         if user.check_password(password) and self.user_can_authenticate(user):
             return user
         

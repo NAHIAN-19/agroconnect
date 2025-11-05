@@ -95,20 +95,13 @@ class CustomTokenRefreshView(TokenRefreshView):
             status_code=status.HTTP_200_OK
         )
         
-        # Set the new refresh token in the cookie
-        handler = AuthCookieHandler(response) # Instantiate handler
-        
         new_refresh_token = serializer.validated_data.get('refresh')
+
         
         if new_refresh_token:
-            response.set_cookie(
-                key=handler.cookie_name,
-                value=str(new_refresh_token),
-                max_age=handler.cookie_lifetime.total_seconds(),
-                secure=handler.cookie_secure,
-                httponly=handler.cookie_httponly,
-                samesite=handler.cookie_samesite
-            )
+            # Instantiate handler and use the new dedicated method
+            handler = AuthCookieHandler(response)
+            handler.set_refresh_cookie(str(new_refresh_token))
             
         return response
 
@@ -294,21 +287,31 @@ class ResendVerificationAPIView(APIView):
             status_code=status.HTTP_200_OK
         )
     
-class LogoutAPIView(APIView):
+class LogoutView(APIView):
     """
-    Handles user logout by clearing the HttpOnly refresh token.
+    Handles user logout.
+    Only authenticated users can access this view.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        # Create a response object
         response = APIResponse.success(
-            message="You have been logged out successfully."
+            message="Logout successful",
+            status_code=status.HTTP_200_OK
         )
         
-        # Use the handler to delete the cookie
-        handler = AuthCookieHandler(response)
-        handler.delete()
-        
+        # Use your existing handler to delete the cookie
+        try:
+            handler = AuthCookieHandler(response)
+            handler.delete()
+        except Exception as e:
+            # Handle error if cookie deletion fails
+            return APIResponse.error(
+                message="Logout failed during cookie deletion.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
         return response
     
 class OnboardingAPIView(CreateAPIView):
