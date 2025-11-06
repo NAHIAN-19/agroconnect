@@ -17,11 +17,22 @@ const useAuthStore = create((set, get) => ({
     useWishlistStore.getState().fetchWishlist();
   },
 
-  logout: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    set({ access_token: null, user: null, isAuth: false });
-    delete api.defaults.headers.common['Authorization'];
+  logout: async () => {
+    try {
+      // 1. Tell the server to delete the HttpOnly cookie
+      // We don't care about the response, just that it completes.
+      await api.post('/api/v1/auth/logout/');
+      
+    } catch (error) {
+      // Log the error but don't stop the logout process
+      console.error('Server logout failed. Proceeding with local logout.', error);
+    } finally {
+      // 2. Clear local state (this runs even if the API call fails)
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      set({ access_token: null, user: null, isAuth: false });
+      delete api.defaults.headers.common['Authorization'];
+    }
   },
 
   setToken: (token) => {

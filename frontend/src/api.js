@@ -142,7 +142,7 @@ api.interceptors.response.use(
       } catch (err) {
         // Fallback to old endpoint if v1 doesn't exist
         response = await axios.post(
-          `${baseURL}/api/token/refresh/`,
+          `${baseURL}/api/v1/token/refresh/`,
           {},
           { withCredentials: true }
         );

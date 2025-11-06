@@ -73,14 +73,23 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         """
-        Inject wishlist product IDs into the serializer context.
+        Injects the user's wishlist product IDs into the serializer context
+        to perform an efficient, single-query check.
         """
         context = super().get_serializer_context()
-        if self.request.user.is_authenticated and self.action == 'list':
-            wishlist = self.request.user.wishlist.all()
-            context['wishlist_product_ids'] = set(wishlist.values_list('product_id', flat=True))
+        user = self.request.user
+        
+        if user.is_authenticated:
+            # 1. Get all of the user's wishlisted product IDs in a single query
+            #    using the correct related_name 'wishlist_items'
+            wishlist_ids = set(
+                user.wishlist_items.values_list('product_id', flat=True)
+            )
+            # 2. Add this set to the serializer context
+            context['wishlist_ids'] = wishlist_ids
         else:
-            context['wishlist_product_ids'] = set()
+            context['wishlist_ids'] = set()
+            
         return context
 
     def get_queryset(self):

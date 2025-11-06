@@ -19,7 +19,7 @@ class WishlistSerializer(serializers.ModelSerializer):
     
     def validate_product_id(self, value):
         """Ensure product exists"""
-        from products.models import Product
+        from apps.products.models import Product
         try:
             Product.objects.get(id=value)
         except Product.DoesNotExist:
@@ -30,7 +30,7 @@ class WishlistSerializer(serializers.ModelSerializer):
         """Create wishlist item with user from request"""
         product_id = validated_data.pop('product_id', None)
         if product_id:
-            from products.models import Product
+            from apps.products.models import Product
             validated_data['product'] = Product.objects.get(id=product_id)
         
         validated_data['user'] = self.context['request'].user
@@ -48,7 +48,7 @@ class WishlistCreateSerializer(serializers.ModelSerializer):
     
     def validate_product_id(self, value):
         """Ensure product exists"""
-        from products.models import Product
+        from apps.products.models import Product
         try:
             product = Product.objects.get(id=value)
             # Check if already in wishlist
@@ -63,7 +63,7 @@ class WishlistCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create wishlist item"""
-        from products.models import Product
+        from apps.products.models import Product
         product = Product.objects.get(id=validated_data['product_id'])
         
         return Wishlist.objects.create(

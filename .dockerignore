@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.env
+
+# Django
+*.log
+db.sqlite3
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Frontend build
+frontend/dist
+frontend/node_modules
+
+# IDE
+.idea/
+.vscode/
